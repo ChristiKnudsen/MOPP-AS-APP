@@ -39,6 +39,8 @@ import {
 
 interface ContractManagementProps {
   language: Language
+  userRole: string
+  userData: any
 }
 
 type ContractStatus = "draft" | "active" | "pending" | "expired" | "terminated"
@@ -66,6 +68,7 @@ interface Contract {
   termsConditions: string
   specialRequirements: string
   paymentTerms: string
+  customerId?: string
 }
 
 interface ContractService {
@@ -89,8 +92,8 @@ const mockContracts: Contract[] = [
   {
     id: "1",
     contractNumber: "CNT-2024-001",
-    clientName: "Oslo Business Center",
-    clientEmail: "contact@oslobusiness.no",
+    clientName: "ABC Corporation",
+    clientEmail: "contact@abc-corp.com",
     clientPhone: "+47 22 12 34 56",
     clientAddress: "Karl Johans gate 1, 0154 Oslo, Norway",
     serviceType: "Office Cleaning",
@@ -128,6 +131,7 @@ const mockContracts: Contract[] = [
       "Standard commercial cleaning terms apply. Service includes all common areas, offices, and restrooms.",
     specialRequirements: "Access required outside business hours. Security clearance needed for all staff.",
     paymentTerms: "Net 30 days",
+    customerId: "cust-1",
   },
   {
     id: "2",
@@ -159,60 +163,41 @@ const mockContracts: Contract[] = [
     termsConditions: "Residential cleaning service agreement. Client to provide access and basic supplies.",
     specialRequirements: "Pet-friendly cleaning products required. Key holder access.",
     paymentTerms: "Monthly billing",
-  },
-  {
-    id: "3",
-    contractNumber: "CNT-2024-003",
-    clientName: "Bergen Industrial Park",
-    clientEmail: "facilities@bergenpark.no",
-    clientPhone: "+47 55 12 34 56",
-    clientAddress: "Industriveien 50, 5179 Godvik, Norway",
-    serviceType: "Industrial Cleaning",
-    contractType: "industrial",
-    status: "pending",
-    startDate: "2024-03-01",
-    endDate: "2025-02-28",
-    renewalDate: "2025-01-01",
-    value: 480000,
-    frequency: "weekly",
-    assignedTeam: ["team-1", "team-4"],
-    services: [
-      {
-        id: "s4",
-        name: "Industrial Cleaning",
-        description: "Heavy-duty industrial facility cleaning",
-        price: 8000,
-        unit: "per week",
-        quantity: 1,
-      },
-      {
-        id: "s5",
-        name: "Equipment Maintenance",
-        description: "Cleaning equipment maintenance",
-        price: 2000,
-        unit: "per month",
-        quantity: 1,
-      },
-    ],
-    documents: [
-      { id: "d4", name: "Industrial Contract.pdf", type: "PDF", uploadDate: "2024-02-15", size: "3.2 MB" },
-      { id: "d5", name: "Safety Requirements.pdf", type: "PDF", uploadDate: "2024-02-15", size: "2.1 MB" },
-    ],
-    termsConditions: "Industrial cleaning contract with safety compliance requirements.",
-    specialRequirements: "Safety certification required. Hazardous material handling protocols.",
-    paymentTerms: "Net 15 days",
+    customerId: "cust-2",
   },
 ]
 
-export function ContractManagement({ language }: ContractManagementProps) {
+export function ContractManagement({ language, userRole, userData }: ContractManagementProps) {
   const t = useTranslation(language)
-  const [contracts] = useState<Contract[]>(mockContracts)
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null)
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards")
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [showCreateDialog, setShowCreateDialog] = useState(false)
+
+  // Filter contracts based on user role
+  const getFilteredContracts = () => {
+    let contracts = mockContracts
+
+    // For customers, only show their own contracts
+    if (userRole === "customer") {
+      contracts = contracts.filter((contract) => contract.customerId === userData.id)
+    }
+
+    // Apply search and status filters
+    return contracts.filter((contract) => {
+      const matchesSearch =
+        contract.contractNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contract.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contract.serviceType.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesStatus = statusFilter === "all" || contract.status === statusFilter
+      const matchesType = typeFilter === "all" || contract.contractType === typeFilter
+      return matchesSearch && matchesStatus && matchesType
+    })
+  }
+
+  const filteredContracts = getFilteredContracts()
 
   const getStatusColor = (status: ContractStatus) => {
     switch (status) {
@@ -244,47 +229,48 @@ export function ContractManagement({ language }: ContractManagementProps) {
     }
   }
 
-  const filteredContracts = contracts.filter((contract) => {
-    const matchesSearch =
-      contract.contractNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contract.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contract.serviceType.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "all" || contract.status === statusFilter
-    const matchesType = typeFilter === "all" || contract.contractType === typeFilter
-    return matchesSearch && matchesStatus && matchesType
-  })
-
   const contractStats = {
-    total: contracts.length,
-    active: contracts.filter((c) => c.status === "active").length,
-    pending: contracts.filter((c) => c.status === "pending").length,
-    expired: contracts.filter((c) => c.status === "expired").length,
-    totalValue: contracts.reduce((sum, c) => sum + c.value, 0),
+    total: filteredContracts.length,
+    active: filteredContracts.filter((c) => c.status === "active").length,
+    pending: filteredContracts.filter((c) => c.status === "pending").length,
+    expired: filteredContracts.filter((c) => c.status === "expired").length,
+    totalValue: filteredContracts.reduce((sum, c) => sum + c.value, 0),
   }
+
+  const canCreateContract = userRole === "company"
+  const canEditContract = userRole === "company"
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">{t.contractManagement}</h1>
-          <p className="text-gray-600">Manage client contracts and service agreements</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            {userRole === "customer" ? "My Contracts" : "Contract Management"}
+          </h1>
+          <p className="text-gray-600">
+            {userRole === "customer"
+              ? "View and manage your cleaning service contracts"
+              : "Manage client contracts and service agreements"}
+          </p>
         </div>
-        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              {t.createContract}
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{t.createContract}</DialogTitle>
-              <DialogDescription>Create a new service contract for your client</DialogDescription>
-            </DialogHeader>
-            <CreateContractForm language={language} onClose={() => setShowCreateDialog(false)} />
-          </DialogContent>
-        </Dialog>
+        {canCreateContract && (
+          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Contract
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create Contract</DialogTitle>
+                <DialogDescription>Create a new service contract for your client</DialogDescription>
+              </DialogHeader>
+              <CreateContractForm language={language} onClose={() => setShowCreateDialog(false)} />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -294,7 +280,7 @@ export function ContractManagement({ language }: ContractManagementProps) {
             <div className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-blue-600" />
               <div>
-                <p className="text-sm text-gray-600">{t.totalContracts}</p>
+                <p className="text-sm text-gray-600">Total Contracts</p>
                 <p className="text-2xl font-bold">{contractStats.total}</p>
               </div>
             </div>
@@ -305,7 +291,7 @@ export function ContractManagement({ language }: ContractManagementProps) {
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
               <div>
-                <p className="text-sm text-gray-600">{t.activeContracts}</p>
+                <p className="text-sm text-gray-600">Active</p>
                 <p className="text-2xl font-bold">{contractStats.active}</p>
               </div>
             </div>
@@ -316,7 +302,7 @@ export function ContractManagement({ language }: ContractManagementProps) {
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
               <div>
-                <p className="text-sm text-gray-600">{t.pendingContracts}</p>
+                <p className="text-sm text-gray-600">Pending</p>
                 <p className="text-2xl font-bold">{contractStats.pending}</p>
               </div>
             </div>
@@ -327,7 +313,7 @@ export function ContractManagement({ language }: ContractManagementProps) {
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-red-500 rounded-full"></div>
               <div>
-                <p className="text-sm text-gray-600">{t.expiredContracts}</p>
+                <p className="text-sm text-gray-600">Expired</p>
                 <p className="text-2xl font-bold">{contractStats.expired}</p>
               </div>
             </div>
@@ -362,15 +348,15 @@ export function ContractManagement({ language }: ContractManagementProps) {
               </div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder={t.filterByStatus} />
+                  <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="active">{t.active}</SelectItem>
-                  <SelectItem value="pending">{t.pending}</SelectItem>
-                  <SelectItem value="draft">{t.draft}</SelectItem>
-                  <SelectItem value="expired">{t.expired}</SelectItem>
-                  <SelectItem value="terminated">{t.terminated}</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="expired">Expired</SelectItem>
+                  <SelectItem value="terminated">Terminated</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -379,9 +365,9 @@ export function ContractManagement({ language }: ContractManagementProps) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="residential">{t.residential}</SelectItem>
-                  <SelectItem value="commercial">{t.commercial}</SelectItem>
-                  <SelectItem value="industrial">{t.industrial}</SelectItem>
+                  <SelectItem value="residential">Residential</SelectItem>
+                  <SelectItem value="commercial">Commercial</SelectItem>
+                  <SelectItem value="industrial">Industrial</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -419,35 +405,37 @@ export function ContractManagement({ language }: ContractManagementProps) {
                       {contract.clientName}
                     </CardDescription>
                   </div>
-                  <Badge className={getStatusColor(contract.status)}>{t[contract.status]}</Badge>
+                  <Badge className={getStatusColor(contract.status)}>{contract.status}</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">{t.serviceType}:</span>
+                  <span className="text-gray-600">Service Type:</span>
                   <span className="font-medium">{contract.serviceType}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">{t.contractValue}:</span>
+                  <span className="text-gray-600">Contract Value:</span>
                   <span className="font-medium">kr {contract.value.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">{t.frequency}:</span>
-                  <span className="font-medium">{t[contract.frequency]}</span>
+                  <span className="text-gray-600">Frequency:</span>
+                  <span className="font-medium capitalize">{contract.frequency}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">{t.endDate}:</span>
+                  <span className="text-gray-600">End Date:</span>
                   <span className="font-medium">{new Date(contract.endDate).toLocaleDateString()}</span>
                 </div>
                 <div className="flex gap-2 pt-2">
                   <Button size="sm" variant="outline" onClick={() => setSelectedContract(contract)} className="flex-1">
                     <Eye className="h-4 w-4 mr-1" />
-                    {t.viewDetails}
+                    View Details
                   </Button>
-                  <Button size="sm" variant="outline">
-                    <Edit className="h-4 w-4 mr-1" />
-                    {t.edit}
-                  </Button>
+                  {canEditContract && (
+                    <Button size="sm" variant="outline">
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -459,13 +447,13 @@ export function ContractManagement({ language }: ContractManagementProps) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t.contractNumber}</TableHead>
-                  <TableHead>{t.clientName}</TableHead>
-                  <TableHead>{t.serviceType}</TableHead>
-                  <TableHead>{t.contractType}</TableHead>
-                  <TableHead>{t.status}</TableHead>
-                  <TableHead>{t.contractValue}</TableHead>
-                  <TableHead>{t.endDate}</TableHead>
+                  <TableHead>Contract Number</TableHead>
+                  <TableHead>Client Name</TableHead>
+                  <TableHead>Service Type</TableHead>
+                  <TableHead>Contract Type</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Contract Value</TableHead>
+                  <TableHead>End Date</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -478,11 +466,11 @@ export function ContractManagement({ language }: ContractManagementProps) {
                     <TableCell className="capitalize">
                       <div className="flex items-center gap-2">
                         {getTypeIcon(contract.contractType)}
-                        {t[contract.contractType]}
+                        {contract.contractType}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(contract.status)}>{t[contract.status]}</Badge>
+                      <Badge className={getStatusColor(contract.status)}>{contract.status}</Badge>
                     </TableCell>
                     <TableCell>kr {contract.value.toLocaleString()}</TableCell>
                     <TableCell>{new Date(contract.endDate).toLocaleDateString()}</TableCell>
@@ -491,12 +479,16 @@ export function ContractManagement({ language }: ContractManagementProps) {
                         <Button size="sm" variant="ghost" onClick={() => setSelectedContract(contract)}>
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="ghost">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost">
-                          <Copy className="h-4 w-4" />
-                        </Button>
+                        {canEditContract && (
+                          <>
+                            <Button size="sm" variant="ghost">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button size="sm" variant="ghost">
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -512,6 +504,7 @@ export function ContractManagement({ language }: ContractManagementProps) {
         <ContractDetailsDialog
           contract={selectedContract}
           language={language}
+          userRole={userRole}
           onClose={() => setSelectedContract(null)}
         />
       )}
@@ -535,47 +528,47 @@ function CreateContractForm({ language, onClose }: { language: Language; onClose
       <TabsContent value="basic" className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="contractNumber">{t.contractNumber}</Label>
+            <Label htmlFor="contractNumber">Contract Number</Label>
             <Input id="contractNumber" placeholder="CNT-2024-XXX" />
           </div>
           <div>
-            <Label htmlFor="serviceType">{t.serviceType}</Label>
+            <Label htmlFor="serviceType">Service Type</Label>
             <Input id="serviceType" placeholder="Office Cleaning" />
           </div>
           <div>
-            <Label htmlFor="contractType">{t.contractType}</Label>
+            <Label htmlFor="contractType">Contract Type</Label>
             <Select>
               <SelectTrigger>
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="residential">{t.residential}</SelectItem>
-                <SelectItem value="commercial">{t.commercial}</SelectItem>
-                <SelectItem value="industrial">{t.industrial}</SelectItem>
+                <SelectItem value="residential">Residential</SelectItem>
+                <SelectItem value="commercial">Commercial</SelectItem>
+                <SelectItem value="industrial">Industrial</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label htmlFor="frequency">{t.frequency}</Label>
+            <Label htmlFor="frequency">Frequency</Label>
             <Select>
               <SelectTrigger>
                 <SelectValue placeholder="Select frequency" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="oneTime">{t.oneTime}</SelectItem>
-                <SelectItem value="weekly">{t.weekly}</SelectItem>
-                <SelectItem value="biWeekly">{t.biWeekly}</SelectItem>
-                <SelectItem value="monthly">{t.monthly}</SelectItem>
-                <SelectItem value="quarterly">{t.quarterly}</SelectItem>
+                <SelectItem value="oneTime">One Time</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+                <SelectItem value="biWeekly">Bi-Weekly</SelectItem>
+                <SelectItem value="monthly">Monthly</SelectItem>
+                <SelectItem value="quarterly">Quarterly</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div>
-            <Label htmlFor="startDate">{t.startDate}</Label>
+            <Label htmlFor="startDate">Start Date</Label>
             <Input id="startDate" type="date" />
           </div>
           <div>
-            <Label htmlFor="endDate">{t.endDate}</Label>
+            <Label htmlFor="endDate">End Date</Label>
             <Input id="endDate" type="date" />
           </div>
         </div>
@@ -584,7 +577,7 @@ function CreateContractForm({ language, onClose }: { language: Language; onClose
       <TabsContent value="client" className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="clientName">{t.clientName}</Label>
+            <Label htmlFor="clientName">Client Name</Label>
             <Input id="clientName" placeholder="Client Name" />
           </div>
           <div>
@@ -596,7 +589,7 @@ function CreateContractForm({ language, onClose }: { language: Language; onClose
             <Input id="clientPhone" placeholder="+47 12 34 56 78" />
           </div>
           <div>
-            <Label htmlFor="paymentTerms">{t.paymentTerms}</Label>
+            <Label htmlFor="paymentTerms">Payment Terms</Label>
             <Select>
               <SelectTrigger>
                 <SelectValue placeholder="Select payment terms" />
@@ -611,14 +604,14 @@ function CreateContractForm({ language, onClose }: { language: Language; onClose
           </div>
         </div>
         <div>
-          <Label htmlFor="clientAddress">{t.address}</Label>
+          <Label htmlFor="clientAddress">Address</Label>
           <Textarea id="clientAddress" placeholder="Full address" />
         </div>
       </TabsContent>
 
       <TabsContent value="services" className="space-y-4">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-semibold">{t.contractServices}</h3>
+          <h3 className="text-lg font-semibold">Contract Services</h3>
           <Button size="sm">
             <Plus className="h-4 w-4 mr-2" />
             Add Service
@@ -663,20 +656,20 @@ function CreateContractForm({ language, onClose }: { language: Language; onClose
 
       <TabsContent value="terms" className="space-y-4">
         <div>
-          <Label htmlFor="termsConditions">{t.termsConditions}</Label>
+          <Label htmlFor="termsConditions">Terms & Conditions</Label>
           <Textarea id="termsConditions" placeholder="Enter terms and conditions" className="min-h-32" />
         </div>
         <div>
-          <Label htmlFor="specialRequirements">{t.specialRequirements}</Label>
+          <Label htmlFor="specialRequirements">Special Requirements</Label>
           <Textarea id="specialRequirements" placeholder="Any special requirements or notes" className="min-h-24" />
         </div>
       </TabsContent>
 
       <div className="flex justify-end gap-2 pt-4">
         <Button variant="outline" onClick={onClose}>
-          {t.cancel}
+          Cancel
         </Button>
-        <Button>{t.save} Contract</Button>
+        <Button>Save Contract</Button>
       </div>
     </Tabs>
   )
@@ -685,10 +678,12 @@ function CreateContractForm({ language, onClose }: { language: Language; onClose
 function ContractDetailsDialog({
   contract,
   language,
+  userRole,
   onClose,
 }: {
   contract: Contract
   language: Language
+  userRole: string
   onClose: () => void
 }) {
   const t = useTranslation(language)
@@ -717,27 +712,27 @@ function ContractDetailsDialog({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">{t.contractInformation}</CardTitle>
+                  <CardTitle className="text-lg">Contract Information</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">{t.contractNumber}:</span>
+                    <span className="text-gray-600">Contract Number:</span>
                     <span className="font-medium">{contract.contractNumber}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">{t.serviceType}:</span>
+                    <span className="text-gray-600">Service Type:</span>
                     <span className="font-medium">{contract.serviceType}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">{t.contractType}:</span>
-                    <span className="font-medium capitalize">{t[contract.contractType]}</span>
+                    <span className="text-gray-600">Contract Type:</span>
+                    <span className="font-medium capitalize">{contract.contractType}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">{t.frequency}:</span>
-                    <span className="font-medium">{t[contract.frequency]}</span>
+                    <span className="text-gray-600">Frequency:</span>
+                    <span className="font-medium capitalize">{contract.frequency}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">{t.status}:</span>
+                    <span className="text-gray-600">Status:</span>
                     <Badge
                       className={`${
                         contract.status === "active"
@@ -747,7 +742,7 @@ function ContractDetailsDialog({
                             : "bg-red-100 text-red-800"
                       }`}
                     >
-                      {t[contract.status]}
+                      {contract.status}
                     </Badge>
                   </div>
                 </CardContent>
@@ -755,27 +750,27 @@ function ContractDetailsDialog({
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">{t.timelineValue}</CardTitle>
+                  <CardTitle className="text-lg">Timeline & Value</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">{t.startDate}:</span>
+                    <span className="text-gray-600">Start Date:</span>
                     <span className="font-medium">{new Date(contract.startDate).toLocaleDateString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">{t.endDate}:</span>
+                    <span className="text-gray-600">End Date:</span>
                     <span className="font-medium">{new Date(contract.endDate).toLocaleDateString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">{t.renewalDate}:</span>
+                    <span className="text-gray-600">Renewal Date:</span>
                     <span className="font-medium">{new Date(contract.renewalDate).toLocaleDateString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">{t.contractValue}:</span>
+                    <span className="text-gray-600">Contract Value:</span>
                     <span className="font-bold text-lg">kr {contract.value.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">{t.paymentTerms}:</span>
+                    <span className="text-gray-600">Payment Terms:</span>
                     <span className="font-medium">{contract.paymentTerms}</span>
                   </div>
                 </CardContent>
@@ -786,18 +781,22 @@ function ContractDetailsDialog({
                   <CardTitle className="text-lg">Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <Button className="w-full justify-start bg-transparent" variant="outline">
-                    <Edit className="h-4 w-4 mr-2" />
-                    {t.editContract}
-                  </Button>
-                  <Button className="w-full justify-start bg-transparent" variant="outline">
-                    <Copy className="h-4 w-4 mr-2" />
-                    Duplicate Contract
-                  </Button>
-                  <Button className="w-full justify-start bg-transparent" variant="outline">
-                    <Calendar className="h-4 w-4 mr-2" />
-                    Schedule Renewal
-                  </Button>
+                  {userRole === "company" && (
+                    <>
+                      <Button className="w-full justify-start bg-transparent" variant="outline">
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit Contract
+                      </Button>
+                      <Button className="w-full justify-start bg-transparent" variant="outline">
+                        <Copy className="h-4 w-4 mr-2" />
+                        Duplicate Contract
+                      </Button>
+                      <Button className="w-full justify-start bg-transparent" variant="outline">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Schedule Renewal
+                      </Button>
+                    </>
+                  )}
                   <Button className="w-full justify-start bg-transparent" variant="outline">
                     <Download className="h-4 w-4 mr-2" />
                     Export Contract
@@ -808,7 +807,7 @@ function ContractDetailsDialog({
 
             <Card>
               <CardHeader>
-                <CardTitle>{t.termsConditions}</CardTitle>
+                <CardTitle>Terms & Conditions</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-gray-700">{contract.termsConditions}</p>
@@ -818,7 +817,7 @@ function ContractDetailsDialog({
             {contract.specialRequirements && (
               <Card>
                 <CardHeader>
-                  <CardTitle>{t.specialRequirements}</CardTitle>
+                  <CardTitle>Special Requirements</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-700">{contract.specialRequirements}</p>
@@ -830,7 +829,7 @@ function ContractDetailsDialog({
           <TabsContent value="services" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>{t.contractServices}</CardTitle>
+                <CardTitle>Contract Services</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -866,12 +865,12 @@ function ContractDetailsDialog({
           <TabsContent value="client" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>{t.clientInformation}</CardTitle>
+                <CardTitle>Client Information</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-600">{t.clientName}</Label>
+                    <Label className="text-sm font-medium text-gray-600">Client Name</Label>
                     <p className="text-lg font-medium">{contract.clientName}</p>
                   </div>
                   <div>
@@ -883,12 +882,12 @@ function ContractDetailsDialog({
                     <p className="text-lg">{contract.clientPhone}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-600">{t.paymentTerms}</Label>
+                    <Label className="text-sm font-medium text-gray-600">Payment Terms</Label>
                     <p className="text-lg">{contract.paymentTerms}</p>
                   </div>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-gray-600">{t.address}</Label>
+                  <Label className="text-sm font-medium text-gray-600">Address</Label>
                   <p className="text-lg">{contract.clientAddress}</p>
                 </div>
               </CardContent>
@@ -898,7 +897,7 @@ function ContractDetailsDialog({
           <TabsContent value="team" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>{t.assignedTeam}</CardTitle>
+                <CardTitle>Assigned Team</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -923,11 +922,13 @@ function ContractDetailsDialog({
             <Card>
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle>{t.contractDocuments}</CardTitle>
-                  <Button size="sm">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload Document
-                  </Button>
+                  <CardTitle>Contract Documents</CardTitle>
+                  {userRole === "company" && (
+                    <Button size="sm">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Document
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
@@ -947,9 +948,11 @@ function ContractDetailsDialog({
                         <Button size="sm" variant="outline">
                           <Download className="h-4 w-4" />
                         </Button>
-                        <Button size="sm" variant="outline">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {userRole === "company" && (
+                          <Button size="sm" variant="outline">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}

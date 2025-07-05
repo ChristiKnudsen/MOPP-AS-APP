@@ -15,22 +15,65 @@ import { FinancialDashboard } from "@/components/financial-dashboard"
 import { QualityControl } from "@/components/quality-control"
 import { MobileInterface } from "@/components/mobile-interface"
 import { PayrollSystem } from "@/components/payroll-system"
+import { LoginForm } from "@/components/auth/login-form"
 import type { Language } from "@/lib/i18n"
 import { Shield, Globe, Users } from "lucide-react"
+
+interface AuthenticatedUser {
+  id: string
+  name: string
+  role: string
+  userType: UserType
+  permissions: string[]
+  [key: string]: any
+}
 
 export default function MOPPApp() {
   const [language, setLanguage] = useState<Language>("en")
   const [userType, setUserType] = useState<UserType | null>(null)
   const [activeSection, setActiveSection] = useState("dashboard")
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [user, setUser] = useState<AuthenticatedUser | null>(null)
+  const [showLogin, setShowLogin] = useState(false)
+
+  const handleUserTypeSelection = (type: UserType) => {
+    setUserType(type)
+    setShowLogin(true)
+  }
+
+  const handleLogin = (selectedUserType: UserType, userData: any) => {
+    setUser({
+      ...userData,
+      userType: selectedUserType,
+    })
+    setUserType(selectedUserType)
+    setIsAuthenticated(true)
+    setShowLogin(false)
+  }
+
+  const handleLogout = () => {
+    setUser(null)
+    setUserType(null)
+    setIsAuthenticated(false)
+    setShowLogin(false)
+    setActiveSection("dashboard")
+  }
+
+  const handleBackToWelcome = () => {
+    setShowLogin(false)
+    setUserType(null)
+  }
 
   const renderContent = () => {
+    if (!user) return null
+
     switch (activeSection) {
       case "dashboard":
-        return <DashboardStats language={language} userType={userType} />
+        return <DashboardStats language={language} userType={user.userType} userData={user} />
       case "employees":
         return <EmployeeManagement language={language} />
       case "contracts":
-        return <ContractManagement language={language} />
+        return <ContractManagement language={language} userRole={user.role} userData={user} />
       case "marketplace":
         return <MaterialMarketplace language={language} />
       case "communication":
@@ -50,7 +93,13 @@ export default function MOPPApp() {
     }
   }
 
-  if (!userType) {
+  // Show login form
+  if (showLogin) {
+    return <LoginForm language={language} onLogin={handleLogin} onBack={handleBackToWelcome} />
+  }
+
+  // Show welcome screen if not authenticated
+  if (!isAuthenticated || !user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="container mx-auto px-4 py-8">
@@ -123,7 +172,7 @@ export default function MOPPApp() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <UserTypeSelector language={language} onSelectUserType={setUserType} />
+              <UserTypeSelector language={language} onSelectUserType={handleUserTypeSelection} />
             </CardContent>
           </Card>
         </div>
@@ -131,29 +180,38 @@ export default function MOPPApp() {
     )
   }
 
+  // Show authenticated app
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <aside className="w-64 bg-gray-800 text-white p-4">
-        <div className="p-6 border-b">
+      <aside className="w-64 bg-gray-800 text-white">
+        <div className="p-6 border-b border-gray-700">
           <div className="flex items-center gap-3">
             <img src="/mopp-logo.png" alt="MOPP Logo" className="w-10 h-10 object-contain" />
             <div>
-              <h1 className="text-xl font-bold text-gray-900">MOPP</h1>
-              <p className="text-xs text-gray-500 capitalize">{userType}</p>
+              <h1 className="text-xl font-bold text-white">MOPP</h1>
+              <p className="text-xs text-gray-300 capitalize">{user.userType}</p>
             </div>
           </div>
         </div>
 
-        <SidebarNavigation activeSection={activeSection} setActiveSection={setActiveSection} />
-        <div className="mt-4">
-          <LanguageSelector language={language} setLanguage={setLanguage} />
-          <UserTypeSelector userType={userType} setUserType={setUserType} />
+        <div className="p-4">
+          <SidebarNavigation
+            activeSection={activeSection}
+            setActiveSection={setActiveSection}
+            userRole={user.role}
+            permissions={user.permissions}
+            onLogout={handleLogout}
+          />
+        </div>
+
+        <div className="mt-auto p-4 border-t border-gray-700">
+          <LanguageSelector currentLanguage={language} onLanguageChange={setLanguage} />
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 overflow-y-auto">{renderContent()}</main>
+      <main className="flex-1 p-6 overflow-y-auto">{renderContent()}</main>
     </div>
   )
 }

@@ -11,6 +11,7 @@ import { type Language, useTranslation } from "@/lib/i18n"
 import { Shield, Globe, Users } from "lucide-react"
 import { EmployeeManagement } from "@/components/employee-management"
 import { ContractManagement } from "@/components/contract-management"
+import { MaterialMarketplace } from "@/components/material-marketplace"
 
 export default function MOPPApp() {
   const [language, setLanguage] = useState<Language>("en")
@@ -232,19 +233,24 @@ export default function MOPPApp() {
 
           {activeSection === "contracts" && userType === "company" && <ContractManagement language={language} />}
 
-          {activeSection !== "dashboard" && activeSection !== "employees" && activeSection !== "contracts" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="capitalize">{activeSection}</CardTitle>
-                <CardDescription>This section is under development. More features coming soon!</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">
-                  The {activeSection} module will provide comprehensive tools for managing your {userType} operations.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+          {activeSection === "materials" && <MaterialMarketplace language={language} />}
+
+          {activeSection !== "dashboard" &&
+            activeSection !== "employees" &&
+            activeSection !== "contracts" &&
+            activeSection !== "materials" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="capitalize">{activeSection}</CardTitle>
+                  <CardDescription>This section is under development. More features coming soon!</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600">
+                    The {activeSection} module will provide comprehensive tools for managing your {userType} operations.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
         </div>
       </div>
     </div>

@@ -9,6 +9,8 @@ import { DashboardStats } from "@/components/dashboard-stats"
 import { SidebarNavigation } from "@/components/sidebar-navigation"
 import { type Language, useTranslation } from "@/lib/i18n"
 import { Shield, Globe, Users } from "lucide-react"
+import { EmployeeManagement } from "@/components/employee-management"
+import { ContractManagement } from "@/components/contract-management"
 
 export default function MOPPApp() {
   const [language, setLanguage] = useState<Language>("en")
@@ -226,7 +228,11 @@ export default function MOPPApp() {
             </div>
           )}
 
-          {activeSection !== "dashboard" && (
+          {activeSection === "employees" && userType === "company" && <EmployeeManagement language={language} />}
+
+          {activeSection === "contracts" && userType === "company" && <ContractManagement language={language} />}
+
+          {activeSection !== "dashboard" && activeSection !== "employees" && activeSection !== "contracts" && (
             <Card>
               <CardHeader>
                 <CardTitle className="capitalize">{activeSection}</CardTitle>

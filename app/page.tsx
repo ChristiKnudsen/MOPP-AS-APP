@@ -18,6 +18,7 @@ import { PayrollSystem } from "@/components/payroll-system"
 import { LoginForm } from "@/components/auth/login-form"
 import type { Language } from "@/lib/i18n"
 import { Shield, Globe, Users } from "lucide-react"
+import { useSearchParams } from "next/navigation"
 
 interface AuthenticatedUser {
   id: string
@@ -29,7 +30,8 @@ interface AuthenticatedUser {
 }
 
 export default function MOPPApp() {
-  const [language, setLanguage] = useState<Language>("en")
+  const searchParams = useSearchParams()
+  const language: Language = (searchParams.get("lang") as Language) || "en"
   const [userType, setUserType] = useState<UserType | null>(null)
   const [activeSection, setActiveSection] = useState("dashboard")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -112,7 +114,7 @@ export default function MOPPApp() {
                 <p className="text-gray-600">VI GJØR RENT!</p>
               </div>
             </div>
-            <LanguageSelector currentLanguage={language} onLanguageChange={setLanguage} />
+            <LanguageSelector currentLanguage={language} />
           </div>
 
           {/* Welcome Section */}
@@ -206,7 +208,7 @@ export default function MOPPApp() {
         </div>
 
         <div className="mt-auto p-4 border-t border-gray-700">
-          <LanguageSelector currentLanguage={language} onLanguageChange={setLanguage} />
+          <LanguageSelector currentLanguage={language} />
         </div>
       </aside>
 

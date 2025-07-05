@@ -303,3 +303,40 @@ export function LoginForm({ userType, onLogin, onBack }: LoginFormProps) {
     </div>
   )
 }
+
+
+
+
+
+const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault()
+  setIsLoading(true)
+  setError("")
+  
+  // Log state and credentials for debugging
+  console.log("Active Tab:", activeTab)
+  console.log("Credentials:", credentials)
+
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    const mockUser = mockUsers[activeTab]
+    console.log("Mock User:", mockUser)
+
+    if (credentials.email === mockUser.email && credentials.password === mockUser.password) {
+      // Mock company login check
+      if (activeTab === "company" && credentials.companyCode && credentials.companyCode !== "CLEAN001") {
+        throw new Error("Invalid company code")
+      }
+
+      onLogin(activeTab, mockUser.userData)
+    } else {
+      throw new Error("Invalid email or password")
+    }
+  } catch (err) {
+    setError(err instanceof Error ? err.message : "Login failed")
+    console.error("Error during login:", err)
+  } finally {
+    setIsLoading(false)
+  }
+}

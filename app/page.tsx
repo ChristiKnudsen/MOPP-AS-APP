@@ -1,219 +1,151 @@
 "use client"
 
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Building2, Users, ShoppingCart, Truck, Globe, Shield, MessageSquare } from "lucide-react"
+import Image from "next/image"
 import { LanguageSelector } from "@/components/language-selector"
-import { UserTypeSelector, type UserType } from "@/components/user-type-selector"
-import { DashboardStats } from "@/components/dashboard-stats"
-import { SidebarNavigation } from "@/components/sidebar-navigation"
-import { EmployeeManagement } from "@/components/employee-management"
-import { ContractManagement } from "@/components/contract-management"
-import { MaterialMarketplace } from "@/components/material-marketplace"
-import { CommunicationHub } from "@/components/communication-hub"
-import { SchedulingSystem } from "@/components/scheduling-system"
-import { FinancialDashboard } from "@/components/financial-dashboard"
-import { QualityControl } from "@/components/quality-control"
-import { MobileInterface } from "@/components/mobile-interface"
-import { PayrollSystem } from "@/components/payroll-system"
 import { LoginForm } from "@/components/auth/login-form"
-import type { Language } from "@/lib/i18n"
-import { Shield, Globe, Users } from "lucide-react"
-import { useSearchParams } from "next/navigation"
+import { UserTypeSelector } from "@/components/user-type-selector"
+import { useLanguage } from "@/contexts/language-context"
+import { getTranslations } from "@/lib/i18n"
 
-interface AuthenticatedUser {
-  id: string
-  name: string
-  role: string
-  userType: UserType
-  permissions: string[]
-  [key: string]: any
-}
-
-export default function MOPPApp() {
-  const searchParams = useSearchParams()
-  const language: Language = (searchParams.get("lang") as Language) || "en"
-  const [userType, setUserType] = useState<UserType | null>(null)
-  const [activeSection, setActiveSection] = useState("dashboard")
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [user, setUser] = useState<AuthenticatedUser | null>(null)
+export default function WelcomePage() {
+  const [selectedUserType, setSelectedUserType] = useState<string | null>(null)
   const [showLogin, setShowLogin] = useState(false)
+  const { language } = useLanguage()
+  const t = getTranslations(language)
 
-  const handleUserTypeSelection = (type: UserType) => {
-    setUserType(type)
-    setShowLogin(true)
-  }
-
-  const handleLogin = (selectedUserType: UserType, userData: any) => {
-    setUser({
-      ...userData,
-      userType: selectedUserType,
-    })
-    setUserType(selectedUserType)
-    setIsAuthenticated(true)
-    setShowLogin(false)
-  }
-
-  const handleLogout = () => {
-    setUser(null)
-    setUserType(null)
-    setIsAuthenticated(false)
-    setShowLogin(false)
-    setActiveSection("dashboard")
-  }
-
-  const handleBackToWelcome = () => {
-    setShowLogin(false)
-    setUserType(null)
-  }
-
-  const renderContent = () => {
-    if (!user) return null
-
-    switch (activeSection) {
-      case "dashboard":
-        return <DashboardStats language={language} userType={user.userType} userData={user} />
-      case "employees":
-        return <EmployeeManagement language={language} />
-      case "contracts":
-        return <ContractManagement language={language} userRole={user.role} userData={user} />
-      case "marketplace":
-        return <MaterialMarketplace language={language} />
-      case "communication":
-        return <CommunicationHub language={language} />
-      case "scheduling":
-        return <SchedulingSystem language={language} />
-      case "financial":
-        return <FinancialDashboard language={language} />
-      case "quality":
-        return <QualityControl language={language} />
-      case "mobile":
-        return <MobileInterface language={language} />
-      case "payroll":
-        return <PayrollSystem language={language} />
-      default:
-        return <div>Section not found</div>
-    }
-  }
-
-  // Show login form
   if (showLogin) {
-    return <LoginForm language={language} onLogin={handleLogin} onBack={handleBackToWelcome} />
+    return <LoginForm onBack={() => setShowLogin(false)} />
   }
 
-  // Show welcome screen if not authenticated
-  if (!isAuthenticated || !user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <div className="container mx-auto px-4 py-8">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-12">
-            <div className="flex items-center gap-3">
-              <img src="/mopp-logo.png" alt="MOPP Logo" className="w-16 h-16 object-contain" />
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">MOPP</h1>
-                <p className="text-gray-600">VI GJØR RENT!</p>
-              </div>
-            </div>
-            <LanguageSelector currentLanguage={language} />
-          </div>
-
-          {/* Welcome Section */}
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Welcome to MOPP</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              The comprehensive platform connecting cleaning companies, employees, customers, and suppliers for
-              transparent and efficient operations.
-            </p>
-          </div>
-
-          {/* Features */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <Card>
-              <CardHeader className="text-center">
-                <Shield className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-                <CardTitle>Transparency</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-center text-gray-600">
-                  Promoting transparency in the cleaning industry with clear communication and fair practices.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="text-center">
-                <Users className="h-12 w-12 text-green-600 mx-auto mb-4" />
-                <CardTitle>Collaboration</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-center text-gray-600">
-                  Seamless collaboration between companies, employees, and customers on one platform.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="text-center">
-                <Globe className="h-12 w-12 text-purple-600 mx-auto mb-4" />
-                <CardTitle>Multi-Language</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-center text-gray-600">
-                  Available in English, Norwegian, Portuguese, French, Swedish, and Danish.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* User Type Selection */}
-          <Card className="max-w-4xl mx-auto">
-            <CardHeader className="text-center">
-              <CardTitle className="text-2xl">Choose Your Role</CardTitle>
-              <CardDescription>
-                Select how you want to use MOPP to get started with the right features for you.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <UserTypeSelector language={language} onSelectUserType={handleUserTypeSelection} />
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    )
+  if (selectedUserType) {
+    return <UserTypeSelector userType={selectedUserType} onBack={() => setSelectedUserType(null)} />
   }
 
-  // Show authenticated app
+  const userTypes = [
+    {
+      id: "company",
+      title: t.userTypes.company.title,
+      description: t.userTypes.company.description,
+      icon: Building2,
+      color: "bg-blue-500",
+    },
+    {
+      id: "employee",
+      title: t.userTypes.employee.title,
+      description: t.userTypes.employee.description,
+      icon: Users,
+      color: "bg-green-500",
+    },
+    {
+      id: "customer",
+      title: t.userTypes.customer.title,
+      description: t.userTypes.customer.description,
+      icon: ShoppingCart,
+      color: "bg-purple-500",
+    },
+    {
+      id: "supplier",
+      title: t.userTypes.supplier.title,
+      description: t.userTypes.supplier.description,
+      icon: Truck,
+      color: "bg-orange-500",
+    },
+  ]
+
+  const features = [
+    {
+      icon: Shield,
+      title: t.welcome.features.transparency.title,
+      description: t.welcome.features.transparency.description,
+    },
+    {
+      icon: MessageSquare,
+      title: t.welcome.features.collaboration.title,
+      description: t.welcome.features.collaboration.description,
+    },
+    {
+      icon: Globe,
+      title: t.welcome.features.multilanguage.title,
+      description: t.welcome.features.multilanguage.description,
+    },
+  ]
+
   return (
-    <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      <aside className="w-64 bg-gray-800 text-white">
-        <div className="p-6 border-b border-gray-700">
-          <div className="flex items-center gap-3">
-            <img src="/mopp-logo.png" alt="MOPP Logo" className="w-10 h-10 object-contain" />
-            <div>
-              <h1 className="text-xl font-bold text-white">MOPP</h1>
-              <p className="text-xs text-gray-300 capitalize">{user.userType}</p>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+      {/* Header */}
+      <header className="container mx-auto px-4 py-6 flex justify-between items-center">
+        <div className="flex items-center space-x-4">
+          <Image src="/mopp-logo.png" alt="MOPP Logo" width={50} height={50} className="rounded-lg" />
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">MOPP</h1>
+            <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">{t.common.tagline}</p>
           </div>
         </div>
-
-        <div className="p-4">
-          <SidebarNavigation
-            activeSection={activeSection}
-            setActiveSection={setActiveSection}
-            userRole={user.role}
-            permissions={user.permissions}
-            onLogout={handleLogout}
-          />
+        <div className="flex items-center space-x-4">
+          <LanguageSelector />
+          <Button onClick={() => setShowLogin(true)} variant="outline">
+            {t.common.login}
+          </Button>
         </div>
+      </header>
 
-        <div className="mt-auto p-4 border-t border-gray-700">
-          <LanguageSelector currentLanguage={language} />
+      {/* Hero Section */}
+      <section className="container mx-auto px-4 py-16 text-center">
+        <Badge variant="secondary" className="mb-4">
+          {t.welcome.features.multilanguage.title}
+        </Badge>
+        <h2 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">{t.welcome.title}</h2>
+        <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">{t.welcome.description}</p>
+      </section>
+
+      {/* Features Section */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="grid md:grid-cols-3 gap-8 mb-16">
+          {features.map((feature, index) => (
+            <Card key={index} className="text-center">
+              <CardHeader>
+                <feature.icon className="h-12 w-12 mx-auto text-blue-600 dark:text-blue-400 mb-4" />
+                <CardTitle>{feature.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription>{feature.description}</CardDescription>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-      </aside>
+      </section>
 
-      {/* Main Content */}
-      <main className="flex-1 p-6 overflow-y-auto">{renderContent()}</main>
+      {/* User Types Section */}
+      <section className="container mx-auto px-4 py-16">
+        <div className="text-center mb-12">
+          <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">{t.welcome.chooseRole.title}</h3>
+          <p className="text-lg text-gray-600 dark:text-gray-300">{t.welcome.chooseRole.description}</p>
+        </div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {userTypes.map((type) => (
+            <Card
+              key={type.id}
+              className="cursor-pointer hover:shadow-lg transition-shadow duration-200"
+              onClick={() => setSelectedUserType(type.id)}
+            >
+              <CardHeader className="text-center">
+                <div className={`w-16 h-16 ${type.color} rounded-full flex items-center justify-center mx-auto mb-4`}>
+                  <type.icon className="h-8 w-8 text-white" />
+                </div>
+                <CardTitle className="text-lg">{type.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-center">{type.description}</CardDescription>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
     </div>
   )
 }

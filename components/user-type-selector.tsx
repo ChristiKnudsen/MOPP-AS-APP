@@ -9,10 +9,10 @@ export type UserType = "company" | "employee" | "customer" | "supplier"
 
 interface UserTypeSelectorProps {
   language: Language
-  onSelectUserType: (type: UserType) => void
+  onSelectUserType?: (type: UserType) => void
 }
 
-export function UserTypeSelector({ language, onSelectUserType }: UserTypeSelectorProps) {
+export function UserTypeSelector({ language, onSelectUserType = () => {} }: UserTypeSelectorProps) {
   const t = useTranslation(language)
 
   const userTypes = [

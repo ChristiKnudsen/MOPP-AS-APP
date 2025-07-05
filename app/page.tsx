@@ -1,151 +1,246 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Building2, Users, ShoppingCart, Truck, Globe, Shield, MessageSquare } from "lucide-react"
-import Image from "next/image"
+import { Building2, User, Users, Package, Shield, MessageSquare, Globe } from "lucide-react"
 import { LanguageSelector } from "@/components/language-selector"
 import { LoginForm } from "@/components/auth/login-form"
-import { UserTypeSelector } from "@/components/user-type-selector"
+import type { UserType } from "@/components/user-type-selector"
+import { SidebarNavigation } from "@/components/sidebar-navigation"
+import { DashboardStats } from "@/components/dashboard-stats"
+import { EmployeeManagement } from "@/components/employee-management"
+import { ContractManagement } from "@/components/contract-management"
+import { MaterialMarketplace } from "@/components/material-marketplace"
+import { CommunicationHub } from "@/components/communication-hub"
+import { SchedulingSystem } from "@/components/scheduling-system"
+import { FinancialDashboard } from "@/components/financial-dashboard"
+import { QualityControl } from "@/components/quality-control"
+import { MobileInterface } from "@/components/mobile-interface"
+import { PayrollSystem } from "@/components/payroll-system"
 import { useLanguage } from "@/contexts/language-context"
-import { getTranslations } from "@/lib/i18n"
 
-export default function WelcomePage() {
-  const [selectedUserType, setSelectedUserType] = useState<string | null>(null)
-  const [showLogin, setShowLogin] = useState(false)
-  const { language } = useLanguage()
-  const t = getTranslations(language)
+type AppState = "welcome" | "login" | "dashboard"
 
-  if (showLogin) {
-    return <LoginForm onBack={() => setShowLogin(false)} />
+interface UserData {
+  id: string
+  name: string
+  role: string
+  permissions: string[]
+  companyId?: string
+  contractIds?: string[]
+}
+
+export default function HomePage() {
+  const { language, t } = useLanguage()
+  const [appState, setAppState] = useState<AppState>("welcome")
+  const [currentUserType, setCurrentUserType] = useState<UserType | null>(null)
+  const [userData, setUserData] = useState<UserData | null>(null)
+  const [activeSection, setActiveSection] = useState("dashboard")
+
+  const handleUserTypeSelect = (userType: UserType) => {
+    setCurrentUserType(userType)
+    setAppState("login")
   }
 
-  if (selectedUserType) {
-    return <UserTypeSelector userType={selectedUserType} onBack={() => setSelectedUserType(null)} />
+  const handleLogin = (userType: UserType, loginUserData: UserData) => {
+    setCurrentUserType(userType)
+    setUserData(loginUserData)
+    setAppState("dashboard")
   }
 
-  const userTypes = [
-    {
-      id: "company",
-      title: t.userTypes.company.title,
-      description: t.userTypes.company.description,
-      icon: Building2,
-      color: "bg-blue-500",
-    },
-    {
-      id: "employee",
-      title: t.userTypes.employee.title,
-      description: t.userTypes.employee.description,
-      icon: Users,
-      color: "bg-green-500",
-    },
-    {
-      id: "customer",
-      title: t.userTypes.customer.title,
-      description: t.userTypes.customer.description,
-      icon: ShoppingCart,
-      color: "bg-purple-500",
-    },
-    {
-      id: "supplier",
-      title: t.userTypes.supplier.title,
-      description: t.userTypes.supplier.description,
-      icon: Truck,
-      color: "bg-orange-500",
-    },
-  ]
+  const handleLogout = () => {
+    setCurrentUserType(null)
+    setUserData(null)
+    setActiveSection("dashboard")
+    setAppState("welcome")
+  }
 
-  const features = [
-    {
-      icon: Shield,
-      title: t.welcome.features.transparency.title,
-      description: t.welcome.features.transparency.description,
-    },
-    {
-      icon: MessageSquare,
-      title: t.welcome.features.collaboration.title,
-      description: t.welcome.features.collaboration.description,
-    },
-    {
-      icon: Globe,
-      title: t.welcome.features.multilanguage.title,
-      description: t.welcome.features.multilanguage.description,
-    },
-  ]
+  const handleBackToWelcome = () => {
+    setCurrentUserType(null)
+    setAppState("welcome")
+  }
+
+  const renderActiveSection = () => {
+    if (!userData || !currentUserType) return null
+
+    switch (activeSection) {
+      case "dashboard":
+        return <DashboardStats userType={currentUserType} userData={userData} />
+      case "employees":
+        return <EmployeeManagement />
+      case "contracts":
+        return <ContractManagement />
+      case "marketplace":
+        return <MaterialMarketplace />
+      case "communication":
+        return <CommunicationHub />
+      case "scheduling":
+        return <SchedulingSystem />
+      case "financial":
+        return <FinancialDashboard />
+      case "quality":
+        return <QualityControl />
+      case "mobile":
+        return <MobileInterface />
+      case "payroll":
+        return <PayrollSystem />
+      default:
+        return (
+          <div className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground">{t.common.sectionNotFound}</p>
+          </div>
+        )
+    }
+  }
+
+  if (appState === "login" && currentUserType) {
+    return <LoginForm userType={currentUserType} onLogin={handleLogin} onBack={handleBackToWelcome} />
+  }
+
+  if (appState === "dashboard" && userData && currentUserType) {
+    return (
+      <div className="flex h-screen bg-gray-50">
+        <SidebarNavigation
+          userType={currentUserType}
+          userData={userData}
+          activeSection={activeSection}
+          onSectionChange={setActiveSection}
+          onLogout={handleLogout}
+        />
+        <main className="flex-1 overflow-auto">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {activeSection === "dashboard"
+                    ? t.dashboard.title
+                    : t.navigation[activeSection as keyof typeof t.navigation]}
+                </h1>
+                <p className="text-gray-600">
+                  {t.dashboard.welcome}, {userData.name}
+                </p>
+              </div>
+              <LanguageSelector />
+            </div>
+            {renderActiveSection()}
+          </div>
+        </main>
+      </div>
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      {/* Header */}
-      <header className="container mx-auto px-4 py-6 flex justify-between items-center">
-        <div className="flex items-center space-x-4">
-          <Image src="/mopp-logo.png" alt="MOPP Logo" width={50} height={50} className="rounded-lg" />
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">MOPP</h1>
-            <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">{t.common.tagline}</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-12">
+          <div className="flex items-center gap-3">
+            <img src="/mopp-logo.png" alt="MOPP Logo" className="w-12 h-12 object-contain" />
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">MOPP</h1>
+              <p className="text-sm text-gray-600">{t.common.tagline}</p>
+            </div>
           </div>
-        </div>
-        <div className="flex items-center space-x-4">
           <LanguageSelector />
-          <Button onClick={() => setShowLogin(true)} variant="outline">
-            {t.common.login}
-          </Button>
         </div>
-      </header>
 
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16 text-center">
-        <Badge variant="secondary" className="mb-4">
-          {t.welcome.features.multilanguage.title}
-        </Badge>
-        <h2 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">{t.welcome.title}</h2>
-        <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">{t.welcome.description}</p>
-      </section>
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">{t.welcome.title}</h2>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">{t.welcome.description}</p>
+        </div>
 
-      {/* Features Section */}
-      <section className="container mx-auto px-4 py-16">
         <div className="grid md:grid-cols-3 gap-8 mb-16">
-          {features.map((feature, index) => (
-            <Card key={index} className="text-center">
-              <CardHeader>
-                <feature.icon className="h-12 w-12 mx-auto text-blue-600 dark:text-blue-400 mb-4" />
-                <CardTitle>{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>{feature.description}</CardDescription>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
+          <Card className="text-center">
+            <CardHeader>
+              <Shield className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+              <CardTitle>{t.welcome.features.transparency.title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>{t.welcome.features.transparency.description}</CardDescription>
+            </CardContent>
+          </Card>
 
-      {/* User Types Section */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">{t.welcome.chooseRole.title}</h3>
-          <p className="text-lg text-gray-600 dark:text-gray-300">{t.welcome.chooseRole.description}</p>
+          <Card className="text-center">
+            <CardHeader>
+              <MessageSquare className="h-12 w-12 text-green-600 mx-auto mb-4" />
+              <CardTitle>{t.welcome.features.collaboration.title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>{t.welcome.features.collaboration.description}</CardDescription>
+            </CardContent>
+          </Card>
+
+          <Card className="text-center">
+            <CardHeader>
+              <Globe className="h-12 w-12 text-purple-600 mx-auto mb-4" />
+              <CardTitle>{t.welcome.features.multilanguage.title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription>{t.welcome.features.multilanguage.description}</CardDescription>
+            </CardContent>
+          </Card>
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {userTypes.map((type) => (
+
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">{t.welcome.chooseRole.title}</h3>
+            <p className="text-gray-600">{t.welcome.chooseRole.description}</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card
-              key={type.id}
-              className="cursor-pointer hover:shadow-lg transition-shadow duration-200"
-              onClick={() => setSelectedUserType(type.id)}
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => handleUserTypeSelect("company")}
             >
               <CardHeader className="text-center">
-                <div className={`w-16 h-16 ${type.color} rounded-full flex items-center justify-center mx-auto mb-4`}>
-                  <type.icon className="h-8 w-8 text-white" />
-                </div>
-                <CardTitle className="text-lg">{type.title}</CardTitle>
+                <Building2 className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+                <CardTitle className="text-lg">{t.userTypes.company.title}</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription className="text-center">{type.description}</CardDescription>
+                <CardDescription className="text-center">{t.userTypes.company.description}</CardDescription>
               </CardContent>
             </Card>
-          ))}
+
+            <Card
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => handleUserTypeSelect("employee")}
+            >
+              <CardHeader className="text-center">
+                <User className="h-12 w-12 text-green-600 mx-auto mb-4" />
+                <CardTitle className="text-lg">{t.userTypes.employee.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-center">{t.userTypes.employee.description}</CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => handleUserTypeSelect("customer")}
+            >
+              <CardHeader className="text-center">
+                <Users className="h-12 w-12 text-purple-600 mx-auto mb-4" />
+                <CardTitle className="text-lg">{t.userTypes.customer.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-center">{t.userTypes.customer.description}</CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => handleUserTypeSelect("supplier")}
+            >
+              <CardHeader className="text-center">
+                <Package className="h-12 w-12 text-orange-600 mx-auto mb-4" />
+                <CardTitle className="text-lg">{t.userTypes.supplier.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-center">{t.userTypes.supplier.description}</CardDescription>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </section>
+      </div>
     </div>
   )
 }

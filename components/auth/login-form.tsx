@@ -10,11 +10,12 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Building2, User, Users, Package, Eye, EyeOff } from "lucide-react"
-import { type Language, useTranslation } from "@/lib/i18n"
+import { LanguageSelector } from "@/components/language-selector"
+import { useLanguage } from "@/contexts/language-context"
 import type { UserType } from "@/components/user-type-selector"
 
 interface LoginFormProps {
-  language: Language
+  userType: UserType
   onLogin: (userType: UserType, userData: any) => void
   onBack: () => void
 }
@@ -25,9 +26,9 @@ interface LoginCredentials {
   companyCode?: string
 }
 
-export function LoginForm({ language, onLogin, onBack }: LoginFormProps) {
-  const t = useTranslation(language)
-  const [activeTab, setActiveTab] = useState<UserType>("company")
+export function LoginForm({ userType, onLogin, onBack }: LoginFormProps) {
+  const { t } = useLanguage()
+  const [activeTab, setActiveTab] = useState<UserType>(userType)
   const [credentials, setCredentials] = useState<LoginCredentials>({
     email: "",
     password: "",
@@ -130,16 +131,7 @@ export function LoginForm({ language, onLogin, onBack }: LoginFormProps) {
   }
 
   const getTabTitle = (userType: UserType) => {
-    switch (userType) {
-      case "company":
-        return "Company"
-      case "employee":
-        return "Employee"
-      case "customer":
-        return "Customer"
-      case "supplier":
-        return "Supplier"
-    }
+    return t.userTypes[userType].title
   }
 
   const getDemoCredentials = (userType: UserType) => {
@@ -155,15 +147,18 @@ export function LoginForm({ language, onLogin, onBack }: LoginFormProps) {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <img src="/mopp-logo.png" alt="MOPP Logo" className="w-12 h-12 object-contain" />
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">MOPP</h1>
-              <p className="text-sm text-gray-600">VI GJØR RENT!</p>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <img src="/mopp-logo.png" alt="MOPP Logo" className="w-12 h-12 object-contain" />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">MOPP</h1>
+                <p className="text-sm text-gray-600">{t.common.tagline}</p>
+              </div>
             </div>
+            <LanguageSelector />
           </div>
-          <CardTitle className="text-xl">Sign In</CardTitle>
-          <CardDescription>Choose your account type and sign in to continue</CardDescription>
+          <CardTitle className="text-xl">{t.auth.login.title}</CardTitle>
+          <CardDescription>{t.auth.login.subtitle}</CardDescription>
         </CardHeader>
 
         <CardContent>
@@ -171,11 +166,11 @@ export function LoginForm({ language, onLogin, onBack }: LoginFormProps) {
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="company" className="flex items-center gap-2">
                 {getTabIcon("company")}
-                <span className="hidden sm:inline">Company</span>
+                <span className="hidden sm:inline">{getTabTitle("company")}</span>
               </TabsTrigger>
               <TabsTrigger value="employee" className="flex items-center gap-2">
                 {getTabIcon("employee")}
-                <span className="hidden sm:inline">Employee</span>
+                <span className="hidden sm:inline">{getTabTitle("employee")}</span>
               </TabsTrigger>
             </TabsList>
 
@@ -183,11 +178,11 @@ export function LoginForm({ language, onLogin, onBack }: LoginFormProps) {
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="customer" className="flex items-center gap-2">
                   {getTabIcon("customer")}
-                  <span className="hidden sm:inline">Customer</span>
+                  <span className="hidden sm:inline">{getTabTitle("customer")}</span>
                 </TabsTrigger>
                 <TabsTrigger value="supplier" className="flex items-center gap-2">
                   {getTabIcon("supplier")}
-                  <span className="hidden sm:inline">Supplier</span>
+                  <span className="hidden sm:inline">{getTabTitle("supplier")}</span>
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -198,14 +193,11 @@ export function LoginForm({ language, onLogin, onBack }: LoginFormProps) {
                   <div className="text-center mb-4">
                     <div className="flex items-center justify-center gap-2 mb-2">
                       {getTabIcon(userType)}
-                      <h3 className="font-semibold">{getTabTitle(userType)} Login</h3>
+                      <h3 className="font-semibold">
+                        {getTabTitle(userType)} {t.common.login}
+                      </h3>
                     </div>
-                    <p className="text-sm text-gray-600">
-                      {userType === "company" && "Access your company dashboard and manage operations"}
-                      {userType === "employee" && "View your schedule and communicate with your team"}
-                      {userType === "customer" && "Track your contracts and communicate with your cleaning team"}
-                      {userType === "supplier" && "Manage your products and orders in the marketplace"}
-                    </p>
+                    <p className="text-sm text-gray-600">{t.userTypes[userType].description}</p>
                   </div>
 
                   {userType === "company" && (
@@ -223,11 +215,11 @@ export function LoginForm({ language, onLogin, onBack }: LoginFormProps) {
                   )}
 
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{t.common.email}</Label>
                     <Input
                       id="email"
                       type="email"
-                      placeholder="Enter your email"
+                      placeholder={t.auth.login.emailPlaceholder}
                       value={credentials.email}
                       onChange={(e) => handleInputChange("email", e.target.value)}
                       required
@@ -235,12 +227,12 @@ export function LoginForm({ language, onLogin, onBack }: LoginFormProps) {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
+                    <Label htmlFor="password">{t.common.password}</Label>
                     <div className="relative">
                       <Input
                         id="password"
                         type={showPassword ? "text" : "password"}
-                        placeholder="Enter your password"
+                        placeholder={t.auth.login.passwordPlaceholder}
                         value={credentials.password}
                         onChange={(e) => handleInputChange("password", e.target.value)}
                         required
@@ -268,7 +260,7 @@ export function LoginForm({ language, onLogin, onBack }: LoginFormProps) {
                   )}
 
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Signing in..." : "Sign In"}
+                    {isLoading ? `${t.auth.login.loginButton}...` : t.auth.login.loginButton}
                   </Button>
 
                   {/* Demo credentials */}
@@ -303,7 +295,7 @@ export function LoginForm({ language, onLogin, onBack }: LoginFormProps) {
 
           <div className="mt-6 text-center">
             <Button variant="ghost" onClick={onBack} className="text-sm">
-              ← Back to Welcome
+              ← {t.auth.login.backToWelcome}
             </Button>
           </div>
         </CardContent>

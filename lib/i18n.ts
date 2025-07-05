@@ -9,7 +9,7 @@ export const languages: Record<Language, string> = {
   da: "Dansk",
 }
 
-interface Translations {
+export interface Translations {
   common: {
     tagline: string
     sectionNotFound: string

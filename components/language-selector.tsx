@@ -1,33 +1,24 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Globe } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { languages, type Language } from "@/lib/i18n"
 import { useLanguage } from "@/contexts/language-context"
 
 export function LanguageSelector() {
-  const { language, setLanguage } = useLanguage()
+  const { language, setLanguage, t } = useLanguage()
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-          <Globe className="h-4 w-4" />
-          <span className="hidden sm:inline">{languages[language]}</span>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+    <Select value={language} onValueChange={(value: Language) => setLanguage(value)}>
+      <SelectTrigger className="w-[180px]">
+        <SelectValue placeholder={t.common.language} />
+      </SelectTrigger>
+      <SelectContent>
         {Object.entries(languages).map(([code, name]) => (
-          <DropdownMenuItem
-            key={code}
-            onClick={() => setLanguage(code as Language)}
-            className={language === code ? "bg-accent" : ""}
-          >
+          <SelectItem key={code} value={code}>
             {name}
-          </DropdownMenuItem>
+          </SelectItem>
         ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </SelectContent>
+    </Select>
   )
 }

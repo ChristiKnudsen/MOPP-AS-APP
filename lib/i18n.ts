@@ -1216,7 +1216,9 @@ export function getTranslations(language: Language): Translations {
   return translations[language] || translations.en
 }
 
-// Legacy function for backward compatibility
+// Legacy export for backward compatibility
 export function useTranslation(language: Language): Translations {
   return getTranslations(language)
 }
+
+export { translations }

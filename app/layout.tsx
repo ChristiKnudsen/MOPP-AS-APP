@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
   title: "MOPP - Multi-Language Cleaning Platform",
-  description: "Comprehensive platform for cleaning industry operations",
+  description: "Comprehensive platform for cleaning companies, employees, customers, and suppliers",
     generator: 'v0.dev'
 }
 
